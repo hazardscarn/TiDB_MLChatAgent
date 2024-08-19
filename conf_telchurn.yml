@@ -84,7 +84,7 @@ model:
   shap_summary: "results//tel_churn//shap_summary_df.csv"
   bq_import_data: "results//tel_churn//bq_dataset.csv"
   bq_import_shap_data: "results//tel_churn//bq_shap_dataset.csv"
-  shap_base_value: "results//tel_churn//shap_base_values.txt"
+  shap_base_value: "models//shap_base_values.txt"
 dice:
   total_cfs: 10
   desired_class: 0
