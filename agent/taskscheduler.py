@@ -4,14 +4,14 @@ import pandas as pd
 import io
 import base64
 from abc import ABC
-import vertexai
-from vertexai.language_models import TextGenerationModel
-from vertexai.language_models import CodeGenerationModel
-from vertexai.language_models import CodeChatModel
-from vertexai.generative_models import GenerativeModel
-from vertexai.generative_models import HarmCategory,HarmBlockThreshold
-from vertexai.generative_models import GenerationConfig
-from vertexai.language_models import TextEmbeddingModel
+# import vertexai
+# from vertexai.language_models import TextGenerationModel
+# from vertexai.language_models import CodeGenerationModel
+# from vertexai.language_models import CodeChatModel
+# from vertexai.generative_models import GenerativeModel
+# from vertexai.generative_models import HarmCategory,HarmBlockThreshold
+# from vertexai.generative_models import GenerationConfig
+# from vertexai.language_models import TextEmbeddingModel
 import time
 import json
 import pandas as pd
@@ -19,14 +19,15 @@ from datetime import datetime
 import google.auth
 import pandas as pd
 import yaml
-from google.cloud.exceptions import NotFound
-import google.generativeai as genai
+# from google.cloud.exceptions import NotFound
+# import google.generativeai as genai
 from google.generativeai import configure
+from langchain_google_genai import GoogleGenerativeAI
 import os
 with open('./llm_configs.yml') as file:
     conf = yaml.load(file, Loader=yaml.FullLoader)
 
-configure(api_key=os.getenv('GOOGLE_API_KEY'))
+# configure(api_key=os.getenv('GOOGLE_API_KEY'))
 
 class TaskMaster(ABC):
     """ 
@@ -53,7 +54,7 @@ class TaskMaster(ABC):
         """
 
 
-        self.task_model = genai.GenerativeModel(model_name="gemini-1.5-flash-001")
+        self.task_model = GoogleGenerativeAI(model="gemini-1.5-flash-001")
 
     def ask_taskmaster(self, user_question: str) -> dict:
         """
@@ -75,5 +76,5 @@ class TaskMaster(ABC):
         """
         prompt = conf['question_reformer']['prompt1']+f"""{user_question}"""+conf['question_reformer']['prompt2']
             
-        taks_result = self.task_model.generate_content(prompt, stream=False)
-        return taks_result.candidates[0].content.parts[0].text
+        task_result = self.task_model.invoke(prompt)
+        return task_result

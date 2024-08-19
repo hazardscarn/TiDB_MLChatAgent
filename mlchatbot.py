@@ -10,12 +10,24 @@ from google.generativeai import caching
 import streamlit as st
 import os
 from google.generativeai import configure
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 st.set_page_config(
     page_title="TiDB.ML 🤖",
     page_icon="🤖",
 )
 
+
+
+
+GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+if not GOOGLE_API_KEY:
+    st.error("GOOGLE_API_KEY is not set. Please check your .env file.")
+    st.stop()
 
 from utils import walkthrough,sample_questions,normalize_string,remove_sql_and_backticks,agent_prompt,intro_to_data
 from toolbox import generate_sql,execute_sql,subset_churn_contribution_analysis

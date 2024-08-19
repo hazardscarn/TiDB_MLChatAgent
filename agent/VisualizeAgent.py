@@ -5,13 +5,21 @@
 #Code is in javascript
 
 from abc import ABC
-from vertexai.language_models import CodeChatModel
-from vertexai.generative_models import GenerativeModel,HarmCategory,HarmBlockThreshold
+# from vertexai.language_models import CodeChatModel
+# from vertexai.generative_models import GenerativeModel,HarmCategory,HarmBlockThreshold
 from .core import Agent 
 import pandas as pd
 import json
 import yaml  
-
+from abc import ABC
+from langchain_google_genai import GoogleGenerativeAI
+from .core import Agent 
+import pandas as pd
+import json
+import yaml
+import os 
+from google.generativeai import configure
+# configure(api_key=os.getenv('GOOGLE_API_KEY'))
 
 class VisualizeAgent(Agent, ABC):
     """
@@ -65,7 +73,7 @@ class VisualizeAgent(Agent, ABC):
 
     def __init__(self):
         self.model_id = 'gemini-1.5-flash-001'
-        self.model = GenerativeModel("gemini-1.5-flash-001")
+        self.model = GoogleGenerativeAI(model="gemini-1.5-flash-001")
 
     def getChartType(self,user_question, generated_sql):
         map_prompt=f'''
@@ -166,7 +174,7 @@ class VisualizeAgent(Agent, ABC):
          "chart_2":suggestion-2}}
 
       '''
-        chart_type=self.model.generate_content(map_prompt, stream=False).candidates[0].text
+        chart_type = self.model.invoke(map_prompt)
         # print(chart_type)
         # chart_type = model.predict(map_prompt, max_output_tokens = 1024, temperature= 0.2).candidates[0].text
         return chart_type.replace("\n", "").replace("```", "").replace("json", "").replace("```html", "").replace("```", "").replace("js\n","").replace("json\n","").replace("python\n","").replace("javascript","")
@@ -236,22 +244,21 @@ Guidelines:
                   chart.draw(data, options);}}
         '''
 
-    def generate_charts(self,user_question,generated_sql,sql_results):
-        chart_type = self.getChartType(user_question,generated_sql)
-        # chart_type = chart_type.split(",")
-        # chart_list = [x.strip() for x in chart_type]
+    def generate_charts(self, user_question, generated_sql, sql_results):
+        chart_type = self.getChartType(user_question, generated_sql)
         chart_json = json.loads(chart_type)
-        chart_list =[chart_json['chart_1'],chart_json['chart_2']]
+        chart_list = [chart_json['chart_1'], chart_json['chart_2']]
         print("Charts Suggested : " + str(chart_list))
-        # Check if the first component is not None or 'None'
+        
         if chart_list[0] is not None and chart_list[0] != 'None':
-            context_prompt=self.getChartPrompt(user_question,generated_sql,chart_list[0],"chart_div",sql_results)
-            context_prompt_1=self.getChartPrompt(user_question,generated_sql,chart_list[1],"chart_div_1",sql_results)
-            context_query = self.model.generate_content(context_prompt, stream=False)
-            context_query_1 = self.model.generate_content(context_prompt_1, stream=False)
-            google_chart_js={"chart_div":context_query.candidates[0].text.replace("```json", "").replace("```", "").replace("json", "").replace("```html", "").replace("```", "").replace("js","").replace("json","").replace("python","").replace("javascript",""),
-                            "chart_div_1":context_query_1.candidates[0].text.replace("```json", "").replace("```", "").replace("json", "").replace("```html", "").replace("```", "").replace("js","").replace("json","").replace("python","").replace("javascript","")}
-
+            context_prompt = self.getChartPrompt(user_question, generated_sql, chart_list[0], "chart_div", sql_results)
+            context_prompt_1 = self.getChartPrompt(user_question, generated_sql, chart_list[1], "chart_div_1", sql_results)
+            context_query = self.model.invoke(context_prompt)
+            context_query_1 = self.model.invoke(context_prompt_1)
+            google_chart_js = {
+                "chart_div": context_query.replace("```json", "").replace("```", "").replace("json", "").replace("```html", "").replace("```", "").replace("js","").replace("json","").replace("python","").replace("javascript",""),
+                "chart_div_1": context_query_1.replace("```json", "").replace("```", "").replace("json", "").replace("```html", "").replace("```", "").replace("js","").replace("json","").replace("python","").replace("javascript","")
+            }
             return google_chart_js
         else:
             return None

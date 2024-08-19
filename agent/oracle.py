@@ -4,14 +4,14 @@ import pandas as pd
 import io
 import base64
 from abc import ABC
-import vertexai
-from vertexai.language_models import TextGenerationModel
-from vertexai.language_models import CodeGenerationModel
-from vertexai.language_models import CodeChatModel
-from vertexai.generative_models import GenerativeModel
-from vertexai.generative_models import HarmCategory,HarmBlockThreshold
-from vertexai.generative_models import GenerationConfig
-from vertexai.language_models import TextEmbeddingModel
+# import vertexai
+# from vertexai.language_models import TextGenerationModel
+# from vertexai.language_models import CodeGenerationModel
+# from vertexai.language_models import CodeChatModel
+# from vertexai.generative_models import GenerativeModel
+# from vertexai.generative_models import HarmCategory,HarmBlockThreshold
+# from vertexai.generative_models import GenerationConfig
+# from vertexai.language_models import TextEmbeddingModel
 import time
 import json
 import pandas as pd
@@ -19,13 +19,13 @@ from datetime import datetime
 import google.auth
 import pandas as pd
 import yaml
-from google.cloud.exceptions import NotFound
-import google.generativeai as genai
+# from google.cloud.exceptions import NotFound
+# import google.generativeai as genai
 from google.generativeai import configure
+from langchain_google_genai import GoogleGenerativeAI
 import os
 
 configure(api_key=os.getenv('GOOGLE_API_KEY'))
-
 
 with open('./llm_configs.yml') as file:
     conf = yaml.load(file, Loader=yaml.FullLoader)
@@ -55,7 +55,7 @@ class ShapOracle(ABC):
         """
 
 
-        self.churnexplainer = genai.GenerativeModel(model_name="gemini-1.5-flash-001")
+        self.churnexplainer = GoogleGenerativeAI(model="gemini-1.5-flash-001")
         with open(config_file) as file:
             self.conf = yaml.load(file, Loader=yaml.FullLoader)
     def ask_churnoracle(self,user_question, shap_summary: str) -> dict:
@@ -86,8 +86,8 @@ class ShapOracle(ABC):
                          
             """
         prompt = prompt+ conf['churn_oracle']['prompt1']
-        shap_action = self.churnexplainer.generate_content(prompt, stream=False)
-        return shap_action.candidates[0].content.parts[0].text
+        shap_action = self.churnexplainer.invoke(prompt)
+        return shap_action
     
     def ask_recommendation(self,user_question:str, counterfactual: str,customer:str) -> dict:
         """
@@ -260,5 +260,5 @@ class ShapOracle(ABC):
 
                 """
         print(prompt)
-        recommendation = self.churnexplainer.generate_content(prompt, stream=False)
-        return recommendation.candidates[0].content.parts[0].text
+        recommendation = self.churnexplainer.invoke(prompt)
+        return recommendation

@@ -1,12 +1,12 @@
 from abc import ABC
-import vertexai
-from vertexai.language_models import TextGenerationModel
-from vertexai.language_models import CodeGenerationModel
-from vertexai.language_models import CodeChatModel
-from vertexai.generative_models import GenerativeModel
-from vertexai.generative_models import HarmCategory,HarmBlockThreshold
-from vertexai.generative_models import GenerationConfig
-from vertexai.language_models import TextEmbeddingModel
+# import vertexai
+# from vertexai.language_models import TextGenerationModel
+# from vertexai.language_models import CodeGenerationModel
+# from vertexai.language_models import CodeChatModel
+# from vertexai.generative_models import GenerativeModel
+# from vertexai.generative_models import HarmCategory,HarmBlockThreshold
+# from vertexai.generative_models import GenerationConfig
+# from vertexai.language_models import TextEmbeddingModel
 import time
 import json
 import pandas as pd
@@ -17,8 +17,9 @@ import yaml
 from google.cloud.exceptions import NotFound
 from google.generativeai import configure
 import os
+from langchain_google_genai import GoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 
-configure(api_key=os.getenv('GOOGLE_API_KEY'))
+# configure(api_key=os.getenv('GOOGLE_API_KEY'))
 
 with open('./llm_configs.yml') as file:
     conf = yaml.load(file, Loader=yaml.FullLoader)
@@ -31,35 +32,18 @@ class Agent(ABC):
 
     agentType: str = "Agent"
 
-    def __init__(self,
-                model_id:str):
-        """
-        Args:
-            PROJECT_ID (str | None): GCP Project Id.
-            dataset_name (str): 
-            TODO
-        """
+    def __init__(self, model_id: str, api_key: str):
+        self.model_id = model_id
+        self.api_key = api_key
+        # print(f"Initializing Agent with API key: {api_key}")
+        self.model = GoogleGenerativeAI(model=model_id, google_api_key=api_key)
 
-        self.model_id = model_id 
-
-        if model_id == 'code-bison-32k':
-            self.model = CodeGenerationModel.from_pretrained('code-bison-32k')
-        elif model_id == 'text-bison-32k':
-            self.model = TextGenerationModel.from_pretrained('text-bison-32k')
-        elif model_id == 'gemini-1.0-pro':
-            self.model = GenerativeModel("gemini-1.0-pro")
-        elif model_id == 'gemini-1.5-flash-001':
-            self.model = GenerativeModel("gemini-1.5-flash-001")
-        else:
-            raise ValueError("Please specify a compatible model.")
-
-class QueryRefiller(Agent, ABC): 
-    """ 
-    This Agent makes sure the query uses select * and not subset of columns for specific processes
-    """ 
-
+class QueryRefiller(Agent, ABC):
     agentType: str = "QueryFillerAgent"
 
+    def __init__(self, model_id: str, api_key: str):
+        super().__init__(model_id, api_key)
+        # print(f"Initializing QueryRefiller with API key: {api_key}")
 
     def check(self, generated_sql):
 
@@ -75,15 +59,7 @@ class QueryRefiller(Agent, ABC):
         - Do not add any extra text, SQL keywords, or symbols (e.g., "sql", "```", "output").
         """
 
-
-        if self.model_id =='gemini-1.5-flash-001' or self.model_id == 'gemini-1.0-pro':
-            context_query = self.model.generate_content(context_prompt, stream=False)
-            reformed_sql = str(context_query.candidates[0].text)
-
-        else:
-            context_query = self.model.predict(context_prompt, max_output_tokens = 8000, temperature=0)
-            reformed_sql = str(context_query.candidates[0])
-
+        reformed_sql = self.model.invoke(context_prompt)
         return reformed_sql
     
 
@@ -95,33 +71,20 @@ class EmbedderAgent(Agent, ABC):
 
     agentType: str = "EmbedderAgent"
 
-    def __init__(self, mode, embeddings_model='textembedding-gecko@002'): 
-        if mode == 'vertex': 
-            self.mode = mode 
-            self.model = TextEmbeddingModel.from_pretrained(embeddings_model)
-
-        else: raise ValueError('EmbedderAgent mode must be vertex')
+    def __init__(self, mode, embeddings_model='models/embedding-001'):
+            super().__init__(model_id=embeddings_model)
+            self.mode = mode
+            self.model = GoogleGenerativeAIEmbeddings(model=embeddings_model)
 
 
 
-    def create(self, question): 
-        """Text embedding with a Large Language Model."""
+    def create(self, question):
+        if isinstance(question, str):
+            return self.model.embed_query(question)
+        elif isinstance(question, list):
+            return self.model.embed_documents(question)
+        else:
+            raise ValueError('Input must be either str or list')
 
-        if self.mode == 'vertex': 
-            if isinstance(question, str): 
-                embeddings = self.model.get_embeddings([question])
-                for embedding in embeddings:
-                    vector = embedding.values
-                return vector
-            
-            elif isinstance(question, list):  
-                vector = list() 
-                for q in question: 
-                    embeddings = self.model.get_embeddings([q])
 
-                    for embedding in embeddings:
-                        vector.append(embedding.values) 
-                return vector
-            
-            else: raise ValueError('Input must be either str or list')
 

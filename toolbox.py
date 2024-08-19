@@ -40,12 +40,14 @@ from google.generativeai import configure
 
 #GOOGLE_API_KEY = os.environ['GOOGLE_API_KEY']
 
-
-
-# Access the secret
+# Get the API key
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
-configure(api_key=os.getenv('GOOGLE_API_KEY'))
 
+
+# # Access the secret
+# GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+# configure(api_key=os.getenv('GOOGLE_API_KEY'))
+# print(f"Google API Key:{GOOGLE_API_KEY}")
 
 # Load configuration files
 with open('conf_telchurn.yml', 'r') as f:
@@ -55,7 +57,8 @@ with open('conf_telchurn.yml', 'r') as f:
 # Initialize Agents and other components
 Agent = sqlagents.Agent
 #embedder = sqlagents.EmbedderAgent('vertex')
-QueryRefiller=sqlagents.QueryRefiller('gemini-1.5-flash-001')
+#QueryRefiller=sqlagents.QueryRefiller('gemini-1.5-flash-001')
+QueryRefiller = sqlagents.QueryRefiller('gemini-1.5-flash-001', GOOGLE_API_KEY)
 chat2sql = TiDBChat2SQL()
 
 

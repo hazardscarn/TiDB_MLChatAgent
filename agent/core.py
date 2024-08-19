@@ -33,9 +33,9 @@ from dotenv import load_dotenv
 
 
 # Access the secret
-GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+# GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 
-genai.configure(api_key=GOOGLE_API_KEY)
+# genai.configure(api_key=GOOGLE_API_KEY)
 
 class Agent(ABC):
     """
