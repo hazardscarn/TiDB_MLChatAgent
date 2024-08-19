@@ -21,8 +21,12 @@ import pandas as pd
 import yaml
 from google.cloud.exceptions import NotFound
 import google.generativeai as genai
+from google.generativeai import configure
+import os
 with open('./llm_configs.yml') as file:
     conf = yaml.load(file, Loader=yaml.FullLoader)
+
+configure(api_key=os.getenv('GOOGLE_API_KEY'))
 
 class TaskMaster(ABC):
     """ 

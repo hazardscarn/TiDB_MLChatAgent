@@ -36,6 +36,7 @@ from utils import walkthrough,sample_questions,normalize_string,remove_sql_and_b
 from query_engine.tidbsql import TiDBChat2SQL
 import os
 from agent import sqlagents
+from google.generativeai import configure
 
 #GOOGLE_API_KEY = os.environ['GOOGLE_API_KEY']
 
@@ -43,7 +44,7 @@ from agent import sqlagents
 
 # Access the secret
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
-
+configure(api_key=os.getenv('GOOGLE_API_KEY'))
 
 
 # Load configuration files
@@ -53,7 +54,7 @@ with open('conf_telchurn.yml', 'r') as f:
 
 # Initialize Agents and other components
 Agent = sqlagents.Agent
-embedder = sqlagents.EmbedderAgent('vertex')
+#embedder = sqlagents.EmbedderAgent('vertex')
 QueryRefiller=sqlagents.QueryRefiller('gemini-1.5-flash-001')
 chat2sql = TiDBChat2SQL()
 
