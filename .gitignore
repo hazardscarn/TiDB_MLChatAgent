@@ -1,0 +1,8 @@
+venv
+.venv
+notebooks
+.env
+env
+./env
+data
+results

@@ -1,0 +1,134 @@
+data:
+  description: |
+    - I am assisting you with a telecom company's churn dataset and model
+    - The dataset contains information about the customers of a telecom company including demographics, usage,contract and other features
+    - It also contains information about whether the customer has churned or not as well as the predicted probability from churn model
+    - I can help answer any questions you have with dataset, model or help you ask any questions you have directly to the model
+  raw_data_path: "data//telecom_churn//cell2celltrain.csv"
+  processed_data_path: "data//telecom_churn//processed_data.csv"
+  data_dictionary: "data//telecom_churn//data_dictionary.csv"
+  features:
+    cat_features: ['service_area','service_city', 'childreninhh', 'handsetrefurbished', 'handsetwebcapable',
+    'truckowner', 'rvowner', 'homeownership', 'buysviamailorder',
+    'respondstomailoffers', 'optoutmailings', 'nonustravel', 'ownscomputer',
+    'hascreditcard', 'newcellphoneuser', 'notnewcellphoneuser', 'ownsmotorcycle',
+     'madecalltoretentionteam', 'creditrating', 'prizmcode',
+    'occupation', 'maritalstatus']
+    num_features: ['monthlyrevenue', 'monthlyminutes', 'totalrecurringcharge',
+    'directorassistedcalls', 'overageminutes', 'roamingcalls', 'percchangeminutes',
+    'percchangerevenues', 'droppedcalls', 'blockedcalls', 'unansweredcalls',
+    'customercarecalls', 'threewaycalls', 'receivedcalls', 'outboundcalls',
+    'inboundcalls', 'peakcallsinout', 'offpeakcallsinout', 'droppedblockedcalls',
+    'callforwardingcalls', 'callwaitingcalls', 'monthsinservice', 'uniquesubs',
+    'activesubs', 'handsets', 'handsetmodels','handsetprice', 'currentequipmentdays', 'agehh1',
+    'agehh2', 'retentioncalls', 'retentionoffersaccepted', 'referralsmadebysubscriber',
+    'adjustmentstocreditrating', 'revenue_per_minute', 'total_calls',
+    'avg_call_duration','service_tenure', 'customer_support_interaction','incomegroup']
+    target: 'churn'
+    id_features: ['customerid']
+    target_majority_class: "Yes"
+model:
+  description: |
+    - The model used is XGBOOST (Extreme Gradient Boosting) classification model trained on the telecom churn dataset. 
+        - It is trained to predict the churn of customers based on the features provided in the dataset.
+        - XGBOOST models are known for their speed and performance.
+    - You can ask more details on model accuracy if needed.    
+    - SHAP explanations are generated to interpret the model's predictions on local and global levels.
+    - Counterfactual explanations are built with DICE models built over base XGBOOST (Extreme Gradient Boosting) model,to provide recommendations to reduce their churn probability of the customers
+  features:
+    cat_features: ['childreninhh', 'handsetrefurbished', 'handsetwebcapable',
+    'truckowner', 'rvowner', 'homeownership', 'buysviamailorder',
+    'respondstomailoffers', 'optoutmailings', 'nonustravel', 'ownscomputer',
+    'hascreditcard', 'newcellphoneuser', 'notnewcellphoneuser', 'ownsmotorcycle'
+    , 'madecalltoretentionteam', 'creditrating', 'prizmcode',
+    'occupation', 'maritalstatus','service_city']
+    num_features: ['monthlyrevenue', 'monthlyminutes', 'totalrecurringcharge',
+    'directorassistedcalls', 'overageminutes', 'roamingcalls', 'percchangeminutes',
+    'percchangerevenues', 'droppedcalls', 'blockedcalls', 'unansweredcalls',
+    'customercarecalls', 'threewaycalls', 'receivedcalls', 'outboundcalls',
+    'inboundcalls', 'peakcallsinout', 'offpeakcallsinout', 'droppedblockedcalls',
+    'callforwardingcalls', 'callwaitingcalls', 'monthsinservice', 'uniquesubs',
+    'activesubs', 'handsets', 'handsetmodels', 'currentequipmentdays', 'agehh1',
+     'retentioncalls', 'retentionoffersaccepted', 'referralsmadebysubscriber',
+    'adjustmentstocreditrating', 'revenue_per_minute', 'total_calls',
+    'avg_call_duration','service_tenure', 'customer_support_interaction','handsetprice','incomegroup']
+    target: 'churn'
+    prediction_column: 'prediction'
+    id_features: ['customerid']
+  params:
+    max_depth: 5
+    min_child_weight: 6
+    eta: 0.1
+    subsample: 0.8
+    colsample_bytree: 0.8
+    objective: 'binary:logistic'
+    eval_metric: 'auc'
+    gamma: 0.3
+    reg_lambda: 1
+  other_params:
+    num_boost_round: 250
+    early_stopping_rounds: 50
+    test_size: 0.1
+  histogram_model_location: "models//histogram_telchurn_basemodelv1.pkl"
+  catboost_model_location: "models//catboost_telchurn_basemodelv1.pkl"
+  shapexplainer_model_location: "models//shapexplainer_v1.pkl"
+  dice_model_location: "models//dice_basemodelv1.pkl"
+  model_stats: 'models//model_stats.txt'
+  train_category_levels:  'models//train_categories.json'
+  model_location: "models//telchurn_xgbmodelv1.pkl"
+  predicted_train_data: "results//tel_churn//predicted_train_data.csv"
+  predicted_test_data: "results//tel_churn//predicted_test_data.csv"
+  train_shap_values: "results//tel_churn//train_shap_values.csv"
+  test_shap_values: "results//tel_churn//test_shap_values.csv"
+  shap_results: "results//tel_churn//shap_result_df.csv"
+  shap_summary: "results//tel_churn//shap_summary_df.csv"
+  bq_import_data: "results//tel_churn//bq_dataset.csv"
+  bq_import_shap_data: "results//tel_churn//bq_shap_dataset.csv"
+  shap_base_value: "results//tel_churn//shap_base_values.txt"
+dice:
+  total_cfs: 10
+  desired_class: 0
+  top_n: 4
+  diversity_weight: 1
+  permitted_range:
+    currentequipmentdays: [150,500]
+    monthlyrevenue: [10,90]
+    directorassistedcalls: [0,1]
+    overageminutes: [0,40]
+    roamingcalls: [0,1]
+    droppedblockedcalls: [0,10]
+    customercarecalls: [0,2]
+    threewaycalls: [0,1]
+    callforwardingcalls: [0,1]
+    callwaitingcalls: [0,1]
+    activesubs: [1,4]
+    handsets: [1,4]
+    handsetmodels: [1,2]
+    retentioncalls: [0,1]
+    referralsmadebysubscriber: [0,1]
+    revenue_per_minute: [0.1,1]
+    avg_call_duration: [1,45]
+    customer_support_interaction: [0,2]
+    handsetprice: [40,150]
+    roamingcalls: [0,1]
+    handsetwebcapable: ['yes','no']
+  cf_recommendations: "results//tel_churn//test_counterfactual_recommendations.csv"
+    
+llm_subsets:
+  action_features: ['currentequipmentdays','monthlyrevenue',
+    'directorassistedcalls', 'overageminutes', 'roamingcalls', 'droppedblockedcalls',
+    'customercarecalls', 'threewaycalls','callforwardingcalls', 'callwaitingcalls','activesubs', 'handsets', 'handsetmodels', 
+     'retentioncalls','referralsmadebysubscriber','revenue_per_minute','avg_call_duration',
+    'customer_support_interaction','handsetprice','roamingcalls','handsetwebcapable']
+  customer_features: ['service_tenure','childreninhh', 'handsetrefurbished', 'truckowner', 'rvowner', 'homeownership', 'buysviamailorder',
+    'respondstomailoffers', 'optoutmailings', 'nonustravel', 'ownscomputer',
+    'hascreditcard', 'newcellphoneuser', 'notnewcellphoneuser', 'ownsmotorcycle', 'creditrating', 'prizmcode',
+    'occupation', 'maritalstatus','service_city','incomegroup']
+  device_features: ['handsetprice','handsetmodels','handsets','currentequipmentdays']
+  contract_features: ['monthsinservice','monthlyrevenue','monthlyminutes','totalrecurringcharge','percchangeminutes',
+    'percchangerevenues','activesubs','retentionoffersaccepted',
+    'referralsmadebysubscriber','revenue_per_minute']
+  call_features: ['directorassistedcalls','overageminutes','roamingcalls','droppedblockedcalls',
+    'customercarecalls','threewaycalls','callforwardingcalls','callwaitingcalls','inboundcalls','droppedcalls',
+    'receivedcalls','outboundcalls','peakcallsinout','offpeakcallsinout','avg_call_duration']
+  
