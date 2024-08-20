@@ -68,8 +68,8 @@ Here are some sample questions you can ask me if you are a :-
     a. What are the main reasons for churn for customers?\n
     b. WHat are the main reasons for churn for customers with children , with handsets more than 2?\n
     c. Create buckets for current equipment age with this ranges 0-90,91-180,181-365,366-720,720-1000,1000+ as buckets. Then give me average churn rate and count across these buckets.\n
-    d. What is the net effect on CLV if we change the currentequipment age to 30 for those customers with currentequipment age greater than 900 days? Assume the cost of treatment is $150 per customer.\n
-    e. What is the net effect on CLV if we change the currentequipment age to 30 for those customers with currentequipment age greater than 900 days and have churn prediction more than 0.5? Assume the cost of treatment is $150 per customer\n
+    d. What is the net effect on CLV if we change the currentequipmentdays to 30 for those customers with currentequipmentdays greater than 900 days? Assume the cost of treatment is $150 per customer.\n
+    e. What is the net effect on CLV if we change the currentequipmentdays to 30 for those customers with currentequipmentdays greater than 900 days and have churn prediction more than 0.5? Assume the cost of treatment is $150 per customer\n
     f. Create age buckets as 0-18,19-30,31-50,41-70,70+. The calculate count of customers who have higher churn because of revenue_per_minute?\n
 
 2. **Customer Service Rep**:\n
