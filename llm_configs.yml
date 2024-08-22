@@ -1,3 +1,6 @@
+embedding_model: "models/text-embedding-004"
+feedback_table: "feedback_store"
+known_good_sql: "known_good_sqlbase_vector"
 main_agent:
   prompt: |
     You are an intelligent agent named TiDB.ML that answers user questions related to telecom churn analysis.
