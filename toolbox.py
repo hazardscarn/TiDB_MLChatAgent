@@ -37,6 +37,9 @@ from query_engine.tidbsql import TiDBChat2SQL
 import os
 from agent import sqlagents
 from google.generativeai import configure
+from query_engine.sqlknowledgebase import VectorDBCreator
+
+
 
 #GOOGLE_API_KEY = os.environ['GOOGLE_API_KEY']
 
@@ -60,6 +63,8 @@ Agent = sqlagents.Agent
 #QueryRefiller=sqlagents.QueryRefiller('gemini-1.5-flash-001')
 QueryRefiller = sqlagents.QueryRefiller('gemini-1.5-flash-001', GOOGLE_API_KEY)
 chat2sql = TiDBChat2SQL()
+vector_db = VectorDBCreator()
+
 
 
 task_master = taskscheduler.TaskMaster()
@@ -72,10 +77,46 @@ with open(model_config['model']['shap_base_value'], "r") as file:
     base_value = float(file.read().strip())
 
 
+# def generate_sql(user_question: str):
+#     """
+#     Generates the SQL query based on the user question
+#     Use this function to create a SQL query to retrive any data user have asked for or to create an answer to user question.
+
+#     Parameters
+#     ----------
+#         user_question : str
+#             the user question
+#     Returns
+#     -------
+#         str
+#             the result sql query generated
+#     """
+    
+#     st.markdown("--------------------------------------📥 *Generating Query* 📥--------------------------------------")
+#     intermediate_steps = []
+#     normalized_question = normalize_string(user_question)
+#     print(user_question)
+#     generated_sql = chat2sql.chat2sql(user_question)
+#     print(generated_sql)
+
+#     # Save result
+#     if normalized_question not in st.session_state.intermediate_results:
+#         st.session_state.intermediate_results[normalized_question] = []
+#     st.session_state.intermediate_results[normalized_question].append({
+#         "tool": "generate_sql",
+#         "sql_generated": generated_sql
+#     })
+
+#     return generated_sql
+
+
+from query_engine.sqlknowledgebase import vector_db
+import streamlit as st
+
 def generate_sql(user_question: str):
     """
     Generates the SQL query based on the user question
-    Use this function to create a SQL query to retrive any data user have asked for or to create an answer to user question.
+    Use this function to create a SQL query to retrieve any data user have asked for or to create an answer to user question.
 
     Parameters
     ----------
@@ -88,18 +129,49 @@ def generate_sql(user_question: str):
     """
     
     st.markdown("--------------------------------------📥 *Generating Query* 📥--------------------------------------")
-    intermediate_steps = []
     normalized_question = normalize_string(user_question)
-    print(user_question)
-    generated_sql = chat2sql.chat2sql(user_question)
-    print(generated_sql)
+    print(f"Original question: {user_question}")
+
+    # Check for exact match or similar questions in vector store
+    result, is_exact_match = vector_db.find_similar_questions(user_question)
+
+    if is_exact_match:
+        generated_sql = result
+        print(f"Exact match found. SQL: {generated_sql}")
+    else:
+        # If no exact match, use similar questions to enhance the chat2sql prompt
+        similar_queries = result[:3]  # Get top 3 similar queries
+        
+        # Filter queries with similarity score less than 0.2
+        filtered_queries = [(question, sql, similarity) for question, sql, similarity in similar_queries if similarity < 0.2]
+        ##Pass only similar sql queries
+        #filtered_queries = [(sql, similarity) for sql, similarity in similar_queries if similarity < 0.2]
+
+        if filtered_queries:
+            enhanced_prompt = f"""
+            User Query: {user_question}\n
+
+            """
+            for question, sql, similarity in filtered_queries:
+                enhanced_prompt += f"Similar SQL to expected query: {sql}\n"
+
+            enhanced_prompt += "\nGenerate appropriate SQL to answer the User Query. Use similar SQL queries above for reference."
+            print(f"Enhanced prompt: {enhanced_prompt}")
+
+            generated_sql = chat2sql.chat2sql(enhanced_prompt)
+            print(f"Generated SQL using enhanced prompt: {generated_sql}")
+        else:
+            print("No similar questions with similarity less than 0.2 found. Generating SQL without examples.")
+            generated_sql = chat2sql.chat2sql(user_question)
+            print(f"Generated SQL: {generated_sql}")
 
     # Save result
     if normalized_question not in st.session_state.intermediate_results:
         st.session_state.intermediate_results[normalized_question] = []
     st.session_state.intermediate_results[normalized_question].append({
         "tool": "generate_sql",
-        "sql_generated": generated_sql
+        "sql_generated": generated_sql,
+        "is_exact_match": is_exact_match
     })
 
     return generated_sql

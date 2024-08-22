@@ -10,8 +10,8 @@ from google.generativeai import caching
 import streamlit as st
 import os
 from google.generativeai import configure
-import os
 from dotenv import load_dotenv
+from feedback_store import initialize_vector_table
 
 # Load environment variables
 load_dotenv()
@@ -21,39 +21,35 @@ st.set_page_config(
     page_icon="🤖",
 )
 
-
-
-
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 if not GOOGLE_API_KEY:
     st.error("GOOGLE_API_KEY is not set. Please check your .env file.")
     st.stop()
 
-from utils import walkthrough,sample_questions,normalize_string,remove_sql_and_backticks,agent_prompt,intro_to_data
-from toolbox import generate_sql,execute_sql,subset_churn_contribution_analysis
-from toolbox import subset_clv_analysis,generate_visualizations,subset_shap_summary,question_reformer,customer_recommendations,model_stat
-from streamlit_utils import add_sidebar_elements,display_chat_history,handle_user_input
-
-
-
+from utils import walkthrough, sample_questions, normalize_string, remove_sql_and_backticks, agent_prompt, intro_to_data
+from toolbox import generate_sql, execute_sql, subset_churn_contribution_analysis, subset_clv_analysis, generate_visualizations, subset_shap_summary, question_reformer, customer_recommendations, model_stat, VectorDBCreator
+from streamlit_utils import add_sidebar_elements, display_chat_history, handle_user_input
 
 # Access the secret
-GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
-configure(api_key=os.getenv('GOOGLE_API_KEY'))
+configure(api_key=GOOGLE_API_KEY)
 
+# Initialize the Vector Table
+initialize_vector_table()
 
-##Create the Main Agent
-gen_model = genai.GenerativeModel(
-    model_name="gemini-1.5-flash-001",system_instruction=agent_prompt(),
-    tools=[generate_sql,execute_sql,subset_churn_contribution_analysis,subset_clv_analysis,generate_visualizations
-           ,subset_shap_summary,question_reformer,customer_recommendations,model_stat],
-    generation_config={"temperature":0.3})
+# Initialize VectorDBCreator
+vector_db = VectorDBCreator()
 
+# Create the Main Agent
+@st.cache_resource
+def get_gen_model():
+    return genai.GenerativeModel(
+        model_name="gemini-1.5-flash-001",
+        system_instruction=agent_prompt(),
+        tools=[generate_sql, execute_sql, subset_churn_contribution_analysis, subset_clv_analysis, generate_visualizations,
+               subset_shap_summary, question_reformer, customer_recommendations, model_stat],
+        generation_config={"temperature": 0.3})
 
-
-
-
-
+gen_model = get_gen_model()
 
 # Initialize chat session in session state
 if "chat" not in st.session_state:
@@ -61,23 +57,18 @@ if "chat" not in st.session_state:
 if "intermediate_results" not in st.session_state:
     st.session_state.intermediate_results = {}
 
-
-
-
-
-##Add Title
+# Add Title
 st.markdown("<h2 style='text-align: center;'>Meet TiDB.ML 🤖</h2>", unsafe_allow_html=True)
 st.markdown("<br>", unsafe_allow_html=True)
 st.markdown("<br>", unsafe_allow_html=True)
 st.markdown("<br>", unsafe_allow_html=True)
-
-
 
 # Display sidebar elements
 add_sidebar_elements()
 
 display_chat_history(st.session_state.chat.history)
 
-if prompt := st.chat_input("I possess a well of knowledge. What would you like to know?"):
+# Handle new user input
+prompt = st.chat_input("I possess a well of knowledge. What would you like to know?")
+if prompt:
     handle_user_input(prompt)
-    
