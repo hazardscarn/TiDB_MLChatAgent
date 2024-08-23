@@ -127,7 +127,8 @@ def handle_user_input(prompt):
         elif distance < 0.16:  # Similar question (adjust threshold as needed)
             st.info(f"A similar question was found in our vector DB with a feedback score of {feedback_score}. Here's the answer:")
             display_answer(prompt, similar_question['answer'], is_similar=True)
-            st.warning("If this answer doesn't address your question, please use the 'Use Agent' button below to get a new response.")
+            st.warning("""If this answer doesn't address your question, please use the reword the question to get a new response from agent.
+                       Current answer is from a previous answer to similar question""")
             
             # # Use a button to trigger agent response
             # if st.button("Use Agent"):
