@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 from langchain_community.vectorstores import TiDBVectorStore
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 import logging
+import time
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -20,18 +22,38 @@ google_api_key = os.getenv('GOOGLE_API_KEY')
 # Initialize Google embedding model
 embeddings = GoogleGenerativeAIEmbeddings(model=llm_config['embedding_model'], google_api_key=google_api_key)
 
+@retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
 def get_vector_store(table_name):
+    global vector_store
     try:
-        store = TiDBVectorStore(
-            embedding_function=embeddings,
-            connection_string=tidb_connection_string,
-            table_name=table_name,
-        )
-        logger.info(f"Connected to vector store: {table_name}")
-        return store
+        if vector_store is None or not vector_store.is_connected():
+            store = TiDBVectorStore(
+                embedding_function=embeddings,
+                connection_string=tidb_connection_string,
+                table_name=table_name,
+            )
+            vector_store = store
+            logger.info(f"Connected to vector store: {table_name}")
+        return vector_store
     except Exception as e:
         logger.error(f"Error connecting to vector store: {str(e)}")
-        return None
+        vector_store = None
+        raise
+
+# Add a method to check connection
+def is_connected(self):
+    try:
+        # Perform a simple query to check connection
+        self.client.execute("SELECT 1")
+        return True
+    except Exception:
+        return False
+
+# Monkey patch the TiDBVectorStore class to add the is_connected method
+TiDBVectorStore.is_connected = is_connected
+
+# Global variable to store the vector store instance
+vector_store = None
 
 def store_feedback(question, answer, feedback):
     logger.info(f"Storing feedback - Question: {question[:50]}... Feedback: {feedback}")
@@ -78,8 +100,23 @@ def get_similar_question_answer(question, k=1):
 
 def initialize_vector_table():
     table_name = llm_config.get('feedback_table', 'feedback_store')
-    db = get_vector_store(table_name)
-    if db is not None:
-        logger.info(f"Vector table {table_name} initialized successfully")
-    else:
-        logger.error(f"Failed to initialize vector table {table_name}")
+    max_retries = 3
+    retry_delay = 5  # seconds
+
+    for attempt in range(max_retries):
+        try:
+            db = get_vector_store(table_name)
+            if db is not None:
+                logger.info(f"Vector table {table_name} initialized successfully")
+                return True
+            else:
+                logger.warning(f"Failed to initialize vector table {table_name}. Retrying...")
+        except Exception as e:
+            logger.error(f"Error initializing vector table: {str(e)}")
+        
+        if attempt < max_retries - 1:
+            logger.info(f"Retrying in {retry_delay} seconds...")
+            time.sleep(retry_delay)
+    
+    logger.error(f"Failed to initialize vector table {table_name} after {max_retries} attempts")
+    return False

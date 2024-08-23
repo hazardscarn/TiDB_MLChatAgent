@@ -34,25 +34,36 @@ from streamlit_utils import add_sidebar_elements, display_chat_history, handle_u
 configure(api_key=GOOGLE_API_KEY)
 
 # Initialize the Vector Table
-initialize_vector_table()
+if not initialize_vector_table():
+    st.error("Failed to initialize vector store. Some features may not work correctly.")
+else:
+    st.success("Vector store initialized successfully.")
 
 # Initialize VectorDBCreator
-vector_db = VectorDBCreator()
+try:
+    vector_db = VectorDBCreator()
+except Exception as e:
+    st.error(f"Failed to initialize VectorDBCreator: {str(e)}")
+    vector_db = None
 
 # Create the Main Agent
 @st.cache_resource
 def get_gen_model():
-    return genai.GenerativeModel(
-        model_name="gemini-1.5-flash-001",
-        system_instruction=agent_prompt(),
-        tools=[generate_sql, execute_sql, subset_churn_contribution_analysis, subset_clv_analysis, generate_visualizations,
-               subset_shap_summary, question_reformer, customer_recommendations, model_stat],
-        generation_config={"temperature": 0.3})
+    try:
+        return genai.GenerativeModel(
+            model_name="gemini-1.5-flash-001",
+            system_instruction=agent_prompt(),
+            tools=[generate_sql, execute_sql, subset_churn_contribution_analysis, subset_clv_analysis, generate_visualizations,
+                   subset_shap_summary, question_reformer, customer_recommendations, model_stat],
+            generation_config={"temperature": 0.3})
+    except Exception as e:
+        st.error(f"Failed to initialize GenerativeModel: {str(e)}")
+        return None
 
 gen_model = get_gen_model()
 
 # Initialize chat session in session state
-if "chat" not in st.session_state:
+if "chat" not in st.session_state and gen_model is not None:
     st.session_state.chat = gen_model.start_chat(enable_automatic_function_calling=True)
 if "intermediate_results" not in st.session_state:
     st.session_state.intermediate_results = {}
